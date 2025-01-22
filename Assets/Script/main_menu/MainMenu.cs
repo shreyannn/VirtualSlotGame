@@ -39,7 +39,7 @@ public class MainMenu : MonoBehaviour
 
     public void GoToRegister()
     {
-        SceneManager.LoadScene(3);
+        SceneManager.LoadScene(2);
     }
 
     public void GoToLogin()
@@ -52,16 +52,16 @@ public class MainMenu : MonoBehaviour
             playerBalance.text = "";
             return;
         }
-        SceneManager.LoadScene(4);
+        SceneManager.LoadScene(3);
     }
     public void GoToGame()
     {
-        SceneManager.LoadScene(1);
+        SceneManager.LoadScene(0);
     }
 
     public void GoToMainMenuInitial()
     {
-        SceneManager.LoadScene(2);
+        SceneManager.LoadScene(1);
     }
 
 

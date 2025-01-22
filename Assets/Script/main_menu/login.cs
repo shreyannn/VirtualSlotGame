@@ -138,6 +138,6 @@ public class login : MonoBehaviour
 
     public void GoToMainMenu()
     {
-        SceneManager.LoadScene(2);
+        SceneManager.LoadScene(1);
     }
 }

@@ -42,7 +42,7 @@ class KhaltiPaymentController extends Controller
         $postFields = [
             "return_url" => route('payment.response'), // Callback route
             "website_url" => url('/'), // Your website URL
-            "amount" => $amount,
+            "amount" => $amount*100,
             "purchase_order_id" => $purchase_order_id,
             "purchase_order_name" => $purchase_order_name,
             "customer_info" => [

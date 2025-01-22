@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System;
+using Kauda;
+using VirtualSlot.Core;
 using UnityEngine.Serialization; // for action
 using Random = UnityEngine.Random;
 
@@ -63,11 +65,6 @@ public class UIManager : MonoBehaviour
       [SerializeField] private Button plusButton;
       [SerializeField] private Button maxBetButton;
       [SerializeField] private Button autoButton;
-      
-      
-      [SerializeField] private GameObject backgroundMusic;
-      [SerializeField] private GameObject backgroundMusicUnactive;
-      [SerializeField] private GameObject spinAudio;
 
       [SerializeField] private GameObject autoSpinOptions;
       [SerializeField] private GameObject autoXIndexGameObject;
@@ -79,9 +76,11 @@ public class UIManager : MonoBehaviour
       
       private void Start()
       {
+            Invoke(nameof(BackGroundMusic),0.2f);
+            
             _randomForScatter = Random.Range(8,15);
             _randomForWild = Random.Range(1,3);
-            _randomForSparkle = Random.Range(1,2);
+            _randomForSparkle = Random.Range(1,5);
 
             if (DBManager.userName == null)
                   coinAmount = 100; // guest mode
@@ -92,6 +91,11 @@ public class UIManager : MonoBehaviour
             
             coinText.text = coinAmount.ToString("0.00");
            
+      }
+
+      private void BackGroundMusic()
+      {
+            AudioManager.Instance.Play("BackGround");
       }
 
       private void Update()
@@ -118,7 +122,7 @@ public class UIManager : MonoBehaviour
             if (OnSpin != null && coinAmount >= betAmount)
             {
                   OnSpin();
-                  Invoke(nameof(AllowStop),1f);
+                  Invoke(nameof(AllowStop),0.5f);
                   spinTimer = false;
                   currentTime = Time.time;
                   startCountingTime = true;
@@ -164,7 +168,7 @@ public class UIManager : MonoBehaviour
                   
                   InteractableButton(false);
                   
-                  spinAudio.SetActive(true);      //Audio
+                  AudioManager.Instance.Play("Spin");
             }
       }
       
@@ -177,7 +181,6 @@ public class UIManager : MonoBehaviour
                   stopTimer = false;
                   stopButton.SetActive(false);
                   startCountingTime = false;
-                  spinAudio.SetActive(false);   // Audio
             }
       }
 
@@ -373,6 +376,7 @@ public class UIManager : MonoBehaviour
       
       public void AutoSpinX(int count)
       {
+            AudioManager.Instance.Play("AutoStart");
             autoSpinOptions.SetActive(false);
             
             autoXIndexText.text = count.ToString();
@@ -410,6 +414,7 @@ public class UIManager : MonoBehaviour
       
       public void StopAutoSpinButton()
       {
+            AudioManager.Instance.Play("AutoStop");
             autoXIndexGameObject.SetActive(false);
             stopAutoSpinButton.SetActive(false);
             _autoSpinStatus = false;
@@ -496,29 +501,15 @@ public class UIManager : MonoBehaviour
             autoButton.interactable = status;
       }
 
-      #region MyRegion
-      
-      
-      [SerializeField] private bool bgMusicStatus=true;
-      public void MusicStatus()
-      {
-            if (backgroundMusic.activeSelf)            
-            {
-                  backgroundMusic.SetActive(false);
-                  backgroundMusicUnactive.SetActive(true);
-                  bgMusicStatus = false;
-                  return;
-            }
-            backgroundMusic.SetActive(true);
-            backgroundMusicUnactive.SetActive(false);
-            bgMusicStatus = true;
-      }
 
-      #endregion
-      
+      public void ButtonClick()
+      {
+            AudioManager.Instance.Play("ButtonClick");
+      }
 
       public void BackToMainMenu()
       {
-            UnityEngine.SceneManagement.SceneManager.LoadScene(2);
+            AudioManager.Instance.Stop("BackGround");
+            UnityEngine.SceneManagement.SceneManager.LoadScene(1);
       }
 }

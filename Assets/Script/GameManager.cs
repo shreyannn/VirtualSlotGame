@@ -6,7 +6,9 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
+using VirtualSlot.Core;
 using Random = UnityEngine.Random;
+using Random1 = System.Random;
 
 public class GameManager : MonoBehaviour
 {
@@ -112,11 +114,45 @@ public class GameManager : MonoBehaviour
 		betAmount = _uiManager.ReturnBetAmount();    
 		RTP = (winAmount / betAmount) * 100;
 		
-		Debug.Log("rtp: "+RTP +"   winAmount: "+winAmount+ "   bet: "+betAmount);
-		return RTP;
+		// Debug.Log("rtp: "+RTP +"   winAmount: "+winAmount+ "   bet: "+betAmount);
+		// return RTP;
+		return winAmount;
 	}
-	
-	
+	public float SimulateSpinNew()
+	{
+		isSimulation = true;
+		ResetVariables(); 
+		SetReel();
+		Checking();
+
+
+		spinCount = _uiManager.spinCount;
+		betAmount = _uiManager.ReturnBetAmount();    
+		RTP = (winAmount / betAmount) * 100;
+		
+		// Debug.Log("rtp: "+RTP +"   winAmount: "+winAmount+ "   bet: "+betAmount);
+		// return RTP;
+		return winAmount/betAmount;
+	}
+
+	public void SimulateSpinButton()
+	{
+		isSimulation = true;
+		ResetVariables();
+		SetReel();
+		Checking();
+
+
+		spinCount = _uiManager.spinCount;
+		betAmount = _uiManager.ReturnBetAmount();
+		RTP = (winAmount / betAmount) * 100;
+
+		// Debug.Log("rtp: "+RTP +"   winAmount: "+winAmount+ "   bet: "+betAmount);
+		// return RTP;
+		Debug.Log("RTP: "+RTP);
+	}
+
+
 	private void Spin()
 	{
 		isSimulation = false;
@@ -127,7 +163,6 @@ public class GameManager : MonoBehaviour
 		ResetScaleAnimation();
 		ResetVariables();       
 		
-		loseSound.SetActive(false);
 	}
 
 	private void Stop()
@@ -163,20 +198,24 @@ public class GameManager : MonoBehaviour
 		RTP = (winAmount / betAmount) * 100;
 		RTP = Mathf.Round(RTP * 100f) / 100f;  //upto 2decimal values
 		newBalance = _uiManager.ReturnBalance() + winAmount;   // after adding win amount
-		Debug.Log("new balance: "+newBalance);
-
-		StartCoroutine(PlayerActivityMethod());
+		// Debug.Log("new balance: "+newBalance);
+		
 		
 		if(isSimulation) return;
+		
+		StartCoroutine(PlayerActivityMethod());
+		
+		
 		switch (overAllHasWon)
 		{
 			case false:
-				loseSound.SetActive(true);
+				AudioManager.Instance.Play("Lose");
 				_uiManager.AllowSpin();
 				break;
 			case true:
 				_uiManager.SetWinAmount(winAmount);
 				_uiManager.WinAmountUpdateMethod(winAmount);
+					
 				break;
 		}
 
@@ -198,9 +237,15 @@ public class GameManager : MonoBehaviour
 	// Probabilities for each symbol (Symbol IDs: 1 to 13)
 	private float[] symbolProbabilities = new float[]
 	{
-		0.2f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f,0.2f
+		0.2f, 0.1f, 0.1f, 0.2f, 0.2f, 0.2f
 		 //0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f
 	};
+
+
+	public void SetSymbolFrequencies(float[] newSymbolFrequencies)
+	{
+		symbolProbabilities = newSymbolFrequencies;
+	}
 
 	// public void SetSymbolProbabilities(float[] tunedProbabilities)
 	// {
@@ -235,7 +280,8 @@ public class GameManager : MonoBehaviour
 		{
 			for (int i = 0; i < rowCount; i++)
 			{
-				int id = GetWeightedRandomSymbol(symbolProbabilities);
+				int id = GetWeightedRandomSymbol(symbolProbabilities);                    // symbol frequencies are changed
+			
 				reelOnStop[i, j] = id; // Assign the ID to the reel position
 				// Debug.Log("i :"+ i+ "j: "+j + "id : "+ id);
 			}
@@ -384,7 +430,7 @@ public class GameManager : MonoBehaviour
                             if (i == 1 || i == 0) { winCheckList.Add(i + 1); winCheckList.Add(j); }   // adding lower items for future checking in a list
                             break;
 				}
-
+ 
 				if (checkid != reelOnStop[i, j])          // NOT MATCH
 				{
 					if (i < 2) { continue; }
@@ -393,6 +439,7 @@ public class GameManager : MonoBehaviour
 			}
 		}
 	}
+	
 	
 	private void CopyList(int j)
 	{
@@ -450,6 +497,49 @@ public class GameManager : MonoBehaviour
 		else {     RemoveItemFromWinLineCheckList(j);    }
 	}
 
+	
+	// private void CopyList(int j)
+	// {
+	// 	if (itemcount >= 3)
+	// 	{
+	// 		hasWon = true;
+	// 		overAllHasWon = true;
+	// 		if (winLineCheckInGameItemList[0].id == bonusId)   
+	// 		{  
+	// 			bonusGameDetected = true;      
+	// 			bonusGameInitiated = true;     
+	// 		}
+	// 		if (winLineCheckInGameItemList.Count >= max)
+	// 		{
+	// 			winLineStoreInGameItemsList.Add(new winLineStore());
+	// 			max = winLineCheckInGameItemList.Count;
+	// 			for (int m = 0; m < winLineCheckInGameItemList.Count; m++)
+	// 			{
+	// 				winLineStoreInGameItemsList[^1].winline.Add(winLineCheckInGameItemList[m]);   
+	// 			}
+	// 			for (int q = 1; q <= winLineCheckInGameItemList.Count-1; q++)    
+	// 			{
+	// 				if (winLineCheckInGameItemList[q].id == wildId) {  containsWild = true; break;  }
+	// 				containsWild = false;
+	// 			}
+	// 			if (!bonusGameEnabled)
+	// 			{
+	// 				switch (containsWild)
+	// 				{
+	// 					case false:
+	// 						AddWin(checkId, 1);
+	// 						break;
+	// 					case true:
+	// 						AddWin(checkId, 2);
+	// 						break;
+	// 				}
+	// 			}
+	// 			if (bonusGameEnabled) {    MultiplierSelectionForBonus();     }
+	// 		}
+	// 		RemoveItemFromWinLineCheckList(j);
+	// 	}
+	// 	else {     RemoveItemFromWinLineCheckList(j);    }
+	// }
 	private void RemoveItemFromWinLineCheckList(int j)
 	{
 		for (int t = j; t < itemcount; t++)     // exception 1
@@ -489,6 +579,7 @@ public class GameManager : MonoBehaviour
 	
 	IEnumerator DisplayWinlines()
 	{
+		AudioManager.Instance.Play("Win");
 		winDisplay.SetActive(true);
 		particleDisplay.SetActive(true);
 		
@@ -653,6 +744,408 @@ public class GameManager : MonoBehaviour
 		}
 	}
 
+
+
+
+
+
+
+
+
+
+
+	#region Q-Learning
+
+	
+	private float[,] QTable;  // State-action value table for Q-learning
+	
+	private float learningRate = 0.1f;
+	private float discountFactor = 0.9f;
+	private int numActions = 7;  // Number of parameter adjustment actions
+	private int numStates = 4;   // Number of states (simplified representation)
+	private int numSimulations = 1000; // Number of Monte Carlo simulations per episode
+	private int numTrain = 1000;
+
+	private List<float[]> states = new List<float[]>(); 
+	private Random1 rng = new Random1();
+	
+	
+	
+	public void RunQLearning()
+	{
+		InitCombinedMonteCarloQLearning();
+		Train(numTrain);
+		PrintQTable();
+	}
+
+	public void KeepTraining()
+	{
+		Train(numTrain);
+		PrintQTable();
+	}
+	
+	public void InitCombinedMonteCarloQLearning()     // call on start / initialize
+	{
+		QTable = new float[numStates, numActions];  // Initialize the Q-table with zeros
+		StateInit();
+	}
+	
+	
+
+	private void StateInit()
+	{
+		// Add an array of probabilities for each state
+		states.Add(new float[] { 0.10f, 0.10f, 0.10f, 0.10f, 0.10f ,0.10f, 0.10f, 0.10f, 0.10f, 0.10f }); // Equal probabilities 
+		states.Add(new float[] { 0.2f, 0.2f, 0.2f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f  }); // low mor
+		states.Add(new float[] {0.05f, 0.05f, 0.05f, 0.2f, 0.2f, 0.2f,  0.05f, 0.05f, 0.05f, 0.05f  }); // mid more
+		states.Add(new float[] {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.2f, 0.2f, 0.2f, 0.05f   }); // higH more
+	}
+	
+	private float[] ApplyAction(float[] currentState, int action)
+	{
+		float[] newState = (float[])currentState.Clone();              //state == frequency
+		switch (action)
+		{
+			case 0: // Increase Low frequency
+				newState[0] += 0.1f;
+				newState[1] += 0.1f;
+				newState[2] += 0.1f;
+				break;
+			case 1: // Increase Mid frequency
+				newState[3] += 0.1f;
+				newState[4] += 0.1f;
+				newState[5] += 0.1f;
+				break;
+			case 2: // Increase High frequencies
+				newState[6] += 0.1f;
+				newState[7] += 0.1f;
+				newState[8] += 0.1f;
+				break;
+			case 3: // Decrease Low frequency
+				newState[0] -= 0.1f;
+				newState[1] -= 0.1f;
+				newState[2] -= 0.1f;
+				break;
+			case 4: // Decrease Mid frequency
+				newState[3] -= 0.1f;
+				newState[4] -= 0.1f;
+				newState[5] -= 0.1f;
+				break;
+			case 5: // Decrease High frequencies
+				newState[6] -= 0.1f;
+				newState[7] -= 0.1f;
+				newState[8] -= 0.1f;
+				break;
+			case 6: // Reset frequencies
+				newState = new float[]  {0.10f, 0.10f, 0.10f, 0.10f, 0.10f ,0.10f, 0.10f, 0.10f, 0.10f, 0.10f };
+				break;
+		}
+		// Normalize the new state so the sum equals 1
+		float total = newState.Sum();
+		newState = newState.Select(x => x / total).ToArray();
+		
+		return newState;
+	}
+
+	
+	private int ChooseAction(int state, float epsilon)
+	{
+		// 10% chance to explore (choose a random action)  --at start and during implementation
+		if (rng.NextDouble() < epsilon)
+		{
+			// Explore: Choose a random action
+			return rng.Next(numActions);
+		}
+		else
+		{
+			// Exploit: Choose the best action based on the Q-table
+			float maxQ = float.MinValue;
+			int bestAction = 0;
+	
+			for (int action = 0; action < numActions; action++)
+			{
+				if (QTable[state, action] > maxQ)
+				{
+					maxQ = QTable[state, action];
+					bestAction = action;
+				}
+			}
+			return bestAction;
+		}
+	}
+	
+	// private int ChooseAction(int state, float epsilon)
+	// {
+	// 	if (rng.NextDouble() < epsilon)
+	// 	{
+	// 		return rng.Next(numActions);
+	// 	}
+	// 	else
+	// 	{
+	// 		float maxQ = float.MinValue;
+	// 		int bestAction = 0;
+	// 		for (int action = 0; action < numActions; action++)
+	// 		{
+	// 			if (QTable[state, action] > maxQ)
+	// 			{
+	// 				maxQ = QTable[state, action];
+	// 				bestAction = action;
+	// 			}
+	// 		}
+	// 		return bestAction;
+	// 	}
+	// }
+
+
+	private float SimulateGameWithMonteCarlo(int action, int state)
+	{
+		float totalPayout = 0;
+		
+		SetSymbolFrequencies(ApplyAction(states[state], action));  
+		 
+		for (int i = 0; i < numSimulations; i++)
+		{
+			totalPayout += SimulateSpin();  // Simulate one spin and add the payout
+		}
+		
+		var totalBet = betAmount * numSimulations;
+		var rtp = totalPayout / totalBet;
+		// Debug.Log("rtp: "+rtp);
+
+		// float reward;
+		// if (state == 0) //lose state
+		// {
+		// 	if (rtp < 1)
+		// 		reward=  1 / rtp;
+		// 	else
+		// 		reward=  -rtp;
+		// }
+		// else  //win state
+		// {
+		// 	if (rtp < 1)
+		// 		reward = -(1 / rtp);
+		// 	else 
+		// 		reward = rtp;
+		// }
+		// reward = Mathf.Clamp(reward, -10f, 10f);    // Clamp the reward to stabilize learning
+		return CalculateReward(rtp);
+		// return reward;
+	}
+
+	private float targetRTP = 1.5f;
+	
+	private float CalculateReward(float currentRTP)
+	{
+		return -Mathf.Abs(targetRTP - currentRTP); 
+	}
+	public void Train(int episodes)
+	{
+		float initialEpsilon = 0.1f; // Initial exploration rate
+		for (int episode = 0; episode < episodes; episode++)
+		{
+			
+			// Dynamic epsilon decay
+			float epsilon = Mathf.Max(0.01f, initialEpsilon * Mathf.Pow(0.99f, episode));
+			
+			// Start in a random state
+			int currentState = rng.Next(numStates);
+	
+			// Choose an action based on epsilon-greedy strategy
+			int action = ChooseAction(currentState, epsilon); 
+			
+			// Simulate the game with Monte Carlo and get the reward
+			float reward = SimulateGameWithMonteCarlo(action, currentState);    // frequency is being update inside
+	
+			// // Get the next state (simplified as random for now)
+			// int nextState = rng.Next(numStates);
+			
+			// Apply action and determine the next state
+			float[] newFrequencies = ApplyAction(states[currentState], action);
+			int nextState = GetCurrentState(newFrequencies);
+			finalState = nextState;
+			// Update the Q-table
+			UpdateQTable(currentState, action, reward, nextState);
+	
+			// Print progress for debugging (optional)
+			// Console.WriteLine($"Episode {episode + 1}: State={currentState}, Action={action}, Reward={reward}");
+		}
+		Debug.Log("final state: "+finalState);
+	}
+	
+	// public void Train(int episodes)
+	// {
+	// 	float initialEpsilon = 0.1f; 
+	// 	for (int episode = 0; episode < episodes; episode++)
+	// 	{
+	// 		float epsilon = Mathf.Max(0.01f, initialEpsilon * Mathf.Pow(0.99f, episode));
+	// 		int currentState = rng.Next(numStates);
+	// 		int action = ChooseAction(currentState, epsilon); 
+	// 		float reward = SimulateGameWithMonteCarlo(action, currentState);
+	// 		float[] newFrequencies = ApplyAction(states[currentState], action);
+	// 		int nextState = GetCurrentState(newFrequencies);
+	// 		finalState = nextState;
+	// 		UpdateQTable(currentState, action, reward, nextState);
+	// 	}
+	// }
+	
+	
+
+	public int finalState;
+	public float[] frequenciesAfterTraining;
+	
+	
+	private void UpdateQTable(int state, int action, float reward, int nextState)
+	{
+		float maxFutureQ = float.MinValue; 
+		for (int a = 0; a < numActions; a++)   //basically takes the max Q value of the next state
+		{
+			maxFutureQ = Math.Max(maxFutureQ, QTable[nextState, a]);
+		}
+		// Q-learning formula
+		QTable[state, action] += learningRate * (reward + discountFactor * maxFutureQ - QTable[state, action]);
+	}
+
+	
+	// private void UpdateQTable(int state, int action, float reward, int nextState)
+	// {
+	// 	float maxFutureQ = float.MinValue; 
+	// 	for (int a = 0; a < numActions; a++)
+	// 	{
+	// 		maxFutureQ = Math.Max(maxFutureQ, QTable[nextState, a]);
+	// 	}
+	// 	QTable[state, action] += learningRate * (reward + discountFactor * maxFutureQ - QTable[state, action]);
+	// }
+	
+	public void PrintQTable()
+	{
+		string gridOutput = "Q-Table:\n";
+		for (int state = 0; state < numStates; state++)
+		{
+			string row = ""; 
+			for (int action = 0; action < numActions; action++)
+			{
+				row += string.Format("S{0}A{1}: {2:F2}\t", state, action, QTable[state, action]);
+			}
+			gridOutput += row + "\n";
+		}
+		Debug.Log(gridOutput);
+
+
+		string bestActionsOutput = "Best Actions for Each State:\n";
+		for (int state = 0; state < numStates; state++)
+		{
+			int bestAction = 0;
+			float maxQ = float.MinValue;
+			for (int action = 0; action < numActions; action++)
+			{
+				if (QTable[state, action] > maxQ)
+				{
+					maxQ = QTable[state, action];
+					bestAction = action;
+				}
+			}
+			bestActionsOutput += $"State {state}: Best Action is {bestAction} (Q-value: {maxQ:F2})\n";
+		}
+		Debug.Log(bestActionsOutput);
+	}
+
+	
+
+	
+	
+	
+	private int GetCurrentState(float[] currentFrequencies)
+	{
+		int closestState = 0;
+		float minDifference = float.MaxValue;
+
+		for (int i = 0; i < states.Count; i++)
+		{
+			float difference = 0;
+
+			// Calculate the total difference between current frequencies and state[i]
+			for (int j = 0; j < currentFrequencies.Length; j++)
+			{
+				difference += Math.Abs(currentFrequencies[j] - states[i][j]);
+			}
+
+			if (difference < minDifference)
+			{
+				minDifference = difference;
+				closestState = i;
+			}
+		}
+
+		return closestState;  // Return the index of the closest state
+	}
+	// int currentState = GetCurrentState(currentSymbolFrequencies);
+	
+
+
+	
+	public void TestWinningLosingStates()
+	{
+		int currentState = 3; // Start with losing state
+		Debug.Log("Testing Q-Learning with Losing and Winning States");
+
+		for (int step = 0; step < 5; step++) // Test for 10 steps
+		{
+			int bestAction = ChooseAction(currentState,0.05f);
+			Debug.Log($"Step {step + 1}: Current State={currentState}, Best Action={bestAction}");
+
+			// Apply the best action
+			float[] newFrequencies = ApplyAction(states[currentState], bestAction);
+
+			// Determine the next state based on new frequencies
+			currentState = GetCurrentState(newFrequencies);
+
+			// Simulate spins and log RTP
+			SetSymbolFrequencies(newFrequencies);
+			float totalPayout = 0;
+			for (int i = 0; i < numSimulations; i++)
+			{
+				totalPayout += SimulateSpin();
+			}
+
+			
+			float rtp = totalPayout / (numSimulations * betAmount);
+			Debug.Log($"New RTP: {rtp}");
+			// Print the updated frequencies to the console
+			// for (int i = 0; i < newFrequencies.Length; i++)
+			// {
+			// 	Debug.Log($"Symbol {i + 1} Frequency: {newFrequencies[i]:F2}");
+			// }
+
+			// // Validate state transition based on RTP
+			// if (currentState == 0 && rtp < 1)
+			// {
+			// 	Debug.Log("Still in a Losing State!");
+			// }
+			// else if (currentState != 0  && rtp >= 1)
+			// {
+			// 	Debug.Log("Still in a Winning State!");
+			// }
+			// else
+			// {
+			// 	Debug.Log("State transition might be incorrect based on RTP!");
+			// }
+		}
+	}
+
+	
+	
+	
+	
+
+	#endregion
+
+	
+	
+	
+	
+	
+	
+	
 	
 }
 	

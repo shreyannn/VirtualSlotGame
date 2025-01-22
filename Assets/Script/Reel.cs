@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using VirtualSlot.Core;
 
 public class Reel : MonoBehaviour
 {
@@ -75,11 +76,10 @@ public class Reel : MonoBehaviour
 
   private void StopOneByOne()
   {
-	  reeStopSound.SetActive(true);
+	  AudioManager.Instance.Play("ReelStop");
 	  spinAnimator.SetBool("spin",false);
 	  spinAnimator.SetBool("stop",true);
 	 
-	  Invoke(nameof(StopReelSound),0.3f);   //sound
 
 	  if (reelId == 4)
 	  {
@@ -87,9 +87,5 @@ public class Reel : MonoBehaviour
 	  }
   }
 
-  private void StopReelSound()
-  {
-	  reeStopSound.SetActive(false);
-  }
   
 }
