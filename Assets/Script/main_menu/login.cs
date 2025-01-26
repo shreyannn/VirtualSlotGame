@@ -94,7 +94,7 @@ public class login : MonoBehaviour
                     
                     DBManager.userName = nameField.text;
                     Debug.Log("Logged In.");
-                    SceneManager.LoadScene(2);
+                    SceneManager.LoadScene(1);
                 }
                 else
                 {
