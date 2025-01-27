@@ -72,6 +72,8 @@ public class UIManager : MonoBehaviour
       
       
       [SerializeField] private BalanceUpdater balanceUpdater;
+      [SerializeField] private GameObject insufficientFund;
+
       
       
       private void Start()
@@ -170,7 +172,20 @@ public class UIManager : MonoBehaviour
                   
                   AudioManager.Instance.Play("Spin");
             }
+            else
+            {
+                  insufficientFund.SetActive(true);
+                  Invoke(nameof(InsufficientFundDeactivate),2f);
+            }
       }
+
+
+      private void InsufficientFundDeactivate()
+      {
+            CancelInvoke(nameof(InsufficientFundDeactivate));
+            insufficientFund.SetActive(false);
+      }
+      
       
       public void Stop()
       {
@@ -512,4 +527,6 @@ public class UIManager : MonoBehaviour
             AudioManager.Instance.Stop("BackGround");
             UnityEngine.SceneManagement.SceneManager.LoadScene(1);
       }
+    
+      
 }

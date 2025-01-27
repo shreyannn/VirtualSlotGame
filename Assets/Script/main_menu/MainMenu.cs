@@ -11,18 +11,41 @@ public class MainMenu : MonoBehaviour
     public Text playerBalance;
 
     [SerializeField] private Text logInButtonStatus;
+    
     private void Start()          //databse  -> login part
     {
+        MainMenuDataUpdate();
+    }
+
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.buildIndex == 0) // Replace with the specific scene
+        {
+            MainMenuDataUpdate();
+        }
+    }
+    
+    private void MainMenuDataUpdate()
+    { 
         if (DBManager.LoggedIn && DBManager.userName != null)
         {
             playerDisplay.text = "Player:  " + DBManager.userName;
             playerBalance.text = "Balance: " + DBManager.userBalance;
             logInButtonStatus.text = "LOG OUT";
         }
-       
     }
 
-
+    
     // public void LoadSinglePlayer()
     // {
     //     Debug.Log("Single Player Game Loading...");

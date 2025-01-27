@@ -8,6 +8,7 @@ public class BalanceUpdater : MonoBehaviour
 
     public void UpdateBalance(int userID, float newBalance)
     {
+        DBManager.userBalance = newBalance;
         StartCoroutine(UpdateBalanceRequest(userID, newBalance));
     }
 

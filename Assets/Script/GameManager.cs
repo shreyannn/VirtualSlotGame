@@ -62,9 +62,6 @@ public class GameManager : MonoBehaviour
 	[SerializeField] private bool containsWild;
 	[SerializeField] private bool wildOnSetReel;
 	
-	[SerializeField] private int tier=0;
-	public int tier2probability = 2;
-	public int tier1probability = 20;
 	[SerializeField] private List<int> diffItemColomnWise;
 
 	public bool bonusGameEnabled;
@@ -88,6 +85,9 @@ public class GameManager : MonoBehaviour
 		SetReel();    // setting reel initially.
 		UIManager.OnSpin += Spin;
 		UIManager.OnStop += Stop;
+
+		RunQLearningOnStart();
+		TestWinningLosingStatesOnStart();
 	}
 
 	private void OnDestroy()
@@ -247,30 +247,20 @@ public class GameManager : MonoBehaviour
 		symbolProbabilities = newSymbolFrequencies;
 	}
 
-	// public void SetSymbolProbabilities(float[] tunedProbabilities)
-	// {
-	// 	symbolProbabilities = tunedProbabilities;
-	// }
-	
-	
-	
 	// Get a random symbol ID based on weighted probabilities.
-	
 	private int GetWeightedRandomSymbol(float[] probabilities)
 	{
 		float total = 0;
 		foreach (float prob in probabilities)
 			total += prob;
-
 		float randomPoint = Random.value * total;
 
 		for (int i = 0; i < probabilities.Length; i++)
 		{
 			if (randomPoint < probabilities[i])
-				return i + 1; // Symbol IDs start from 1
+				return i ; // Symbol IDs start from 1
 			randomPoint -= probabilities[i];
 		}
-
 		return probabilities.Length; // Default to the last symbol
 	}
 
@@ -498,48 +488,7 @@ public class GameManager : MonoBehaviour
 	}
 
 	
-	// private void CopyList(int j)
-	// {
-	// 	if (itemcount >= 3)
-	// 	{
-	// 		hasWon = true;
-	// 		overAllHasWon = true;
-	// 		if (winLineCheckInGameItemList[0].id == bonusId)   
-	// 		{  
-	// 			bonusGameDetected = true;      
-	// 			bonusGameInitiated = true;     
-	// 		}
-	// 		if (winLineCheckInGameItemList.Count >= max)
-	// 		{
-	// 			winLineStoreInGameItemsList.Add(new winLineStore());
-	// 			max = winLineCheckInGameItemList.Count;
-	// 			for (int m = 0; m < winLineCheckInGameItemList.Count; m++)
-	// 			{
-	// 				winLineStoreInGameItemsList[^1].winline.Add(winLineCheckInGameItemList[m]);   
-	// 			}
-	// 			for (int q = 1; q <= winLineCheckInGameItemList.Count-1; q++)    
-	// 			{
-	// 				if (winLineCheckInGameItemList[q].id == wildId) {  containsWild = true; break;  }
-	// 				containsWild = false;
-	// 			}
-	// 			if (!bonusGameEnabled)
-	// 			{
-	// 				switch (containsWild)
-	// 				{
-	// 					case false:
-	// 						AddWin(checkId, 1);
-	// 						break;
-	// 					case true:
-	// 						AddWin(checkId, 2);
-	// 						break;
-	// 				}
-	// 			}
-	// 			if (bonusGameEnabled) {    MultiplierSelectionForBonus();     }
-	// 		}
-	// 		RemoveItemFromWinLineCheckList(j);
-	// 	}
-	// 	else {     RemoveItemFromWinLineCheckList(j);    }
-	// }
+	
 	private void RemoveItemFromWinLineCheckList(int j)
 	{
 		for (int t = j; t < itemcount; t++)     // exception 1
@@ -747,15 +696,10 @@ public class GameManager : MonoBehaviour
 
 
 
-
-
-
-
-
-
-
+	
+	
 	#region Q-Learning
-
+	
 	
 	private float[,] QTable;  // State-action value table for Q-learning
 	
@@ -765,11 +709,16 @@ public class GameManager : MonoBehaviour
 	private int numStates = 4;   // Number of states (simplified representation)
 	private int numSimulations = 1000; // Number of Monte Carlo simulations per episode
 	private int numTrain = 1000;
-
+	
 	private List<float[]> states = new List<float[]>(); 
 	private Random1 rng = new Random1();
 	
-	
+	public void RunQLearningOnStart()
+	{
+		InitCombinedMonteCarloQLearning();
+		Train(numTrain);
+		PrintQTable();
+	}
 	
 	public void RunQLearning()
 	{
@@ -777,7 +726,7 @@ public class GameManager : MonoBehaviour
 		Train(numTrain);
 		PrintQTable();
 	}
-
+	
 	public void KeepTraining()
 	{
 		Train(numTrain);
@@ -791,7 +740,7 @@ public class GameManager : MonoBehaviour
 	}
 	
 	
-
+	
 	private void StateInit()
 	{
 		// Add an array of probabilities for each state
@@ -846,7 +795,7 @@ public class GameManager : MonoBehaviour
 		
 		return newState;
 	}
-
+	
 	
 	private int ChooseAction(int state, float epsilon)
 	{
@@ -874,34 +823,13 @@ public class GameManager : MonoBehaviour
 		}
 	}
 	
-	// private int ChooseAction(int state, float epsilon)
-	// {
-	// 	if (rng.NextDouble() < epsilon)
-	// 	{
-	// 		return rng.Next(numActions);
-	// 	}
-	// 	else
-	// 	{
-	// 		float maxQ = float.MinValue;
-	// 		int bestAction = 0;
-	// 		for (int action = 0; action < numActions; action++)
-	// 		{
-	// 			if (QTable[state, action] > maxQ)
-	// 			{
-	// 				maxQ = QTable[state, action];
-	// 				bestAction = action;
-	// 			}
-	// 		}
-	// 		return bestAction;
-	// 	}
-	// }
-
-
+	
 	private float SimulateGameWithMonteCarlo(int action, int state)
 	{
 		float totalPayout = 0;
 		
 		SetSymbolFrequencies(ApplyAction(states[state], action));  
+		
 		 
 		for (int i = 0; i < numSimulations; i++)
 		{
@@ -910,34 +838,21 @@ public class GameManager : MonoBehaviour
 		
 		var totalBet = betAmount * numSimulations;
 		var rtp = totalPayout / totalBet;
-		// Debug.Log("rtp: "+rtp);
-
-		// float reward;
-		// if (state == 0) //lose state
-		// {
-		// 	if (rtp < 1)
-		// 		reward=  1 / rtp;
-		// 	else
-		// 		reward=  -rtp;
-		// }
-		// else  //win state
-		// {
-		// 	if (rtp < 1)
-		// 		reward = -(1 / rtp);
-		// 	else 
-		// 		reward = rtp;
-		// }
-		// reward = Mathf.Clamp(reward, -10f, 10f);    // Clamp the reward to stabilize learning
+		
 		return CalculateReward(rtp);
 		// return reward;
 	}
-
-	private float targetRTP = 1.5f;
 	
+	
+	private float targetRTP = 4f;
 	private float CalculateReward(float currentRTP)
 	{
 		return -Mathf.Abs(targetRTP - currentRTP); 
 	}
+	
+	
+	public int finalState;
+	public float[] frequenciesAfterTraining;
 	public void Train(int episodes)
 	{
 		float initialEpsilon = 0.1f; // Initial exploration rate
@@ -972,26 +887,31 @@ public class GameManager : MonoBehaviour
 		Debug.Log("final state: "+finalState);
 	}
 	
-	// public void Train(int episodes)
-	// {
-	// 	float initialEpsilon = 0.1f; 
-	// 	for (int episode = 0; episode < episodes; episode++)
-	// 	{
-	// 		float epsilon = Mathf.Max(0.01f, initialEpsilon * Mathf.Pow(0.99f, episode));
-	// 		int currentState = rng.Next(numStates);
-	// 		int action = ChooseAction(currentState, epsilon); 
-	// 		float reward = SimulateGameWithMonteCarlo(action, currentState);
-	// 		float[] newFrequencies = ApplyAction(states[currentState], action);
-	// 		int nextState = GetCurrentState(newFrequencies);
-	// 		finalState = nextState;
-	// 		UpdateQTable(currentState, action, reward, nextState);
-	// 	}
-	// }
 	
+	private int GetCurrentState(float[] currentFrequencies)
+	{
+		int closestState = 0;
+		float minDifference = float.MaxValue;
 	
-
-	public int finalState;
-	public float[] frequenciesAfterTraining;
+		for (int i = 0; i < states.Count; i++)
+		{
+			float difference = 0;
+	
+			// Calculate the total difference between current frequencies and state[i]
+			for (int j = 0; j < currentFrequencies.Length; j++)
+			{
+				difference += Math.Abs(currentFrequencies[j] - states[i][j]);
+			}
+	
+			if (difference < minDifference)
+			{
+				minDifference = difference;
+				closestState = i;
+			}
+		}
+	
+		return closestState;  // Return the index of the closest state
+	}
 	
 	
 	private void UpdateQTable(int state, int action, float reward, int nextState)
@@ -1004,17 +924,7 @@ public class GameManager : MonoBehaviour
 		// Q-learning formula
 		QTable[state, action] += learningRate * (reward + discountFactor * maxFutureQ - QTable[state, action]);
 	}
-
 	
-	// private void UpdateQTable(int state, int action, float reward, int nextState)
-	// {
-	// 	float maxFutureQ = float.MinValue; 
-	// 	for (int a = 0; a < numActions; a++)
-	// 	{
-	// 		maxFutureQ = Math.Max(maxFutureQ, QTable[nextState, a]);
-	// 	}
-	// 	QTable[state, action] += learningRate * (reward + discountFactor * maxFutureQ - QTable[state, action]);
-	// }
 	
 	public void PrintQTable()
 	{
@@ -1029,8 +939,8 @@ public class GameManager : MonoBehaviour
 			gridOutput += row + "\n";
 		}
 		Debug.Log(gridOutput);
-
-
+	
+	
 		string bestActionsOutput = "Best Actions for Each State:\n";
 		for (int state = 0; state < numStates; state++)
 		{
@@ -1050,94 +960,79 @@ public class GameManager : MonoBehaviour
 	}
 
 	
+	#endregion
 
-	
-	
-	
-	private int GetCurrentState(float[] currentFrequencies)
+	private int CurrentStateOnTest()
 	{
-		int closestState = 0;
-		float minDifference = float.MaxValue;
-
-		for (int i = 0; i < states.Count; i++)
+		int currentState = targetRTP switch
 		{
-			float difference = 0;
-
-			// Calculate the total difference between current frequencies and state[i]
-			for (int j = 0; j < currentFrequencies.Length; j++)
-			{
-				difference += Math.Abs(currentFrequencies[j] - states[i][j]);
-			}
-
-			if (difference < minDifference)
-			{
-				minDifference = difference;
-				closestState = i;
-			}
-		}
-
-		return closestState;  // Return the index of the closest state
+			> 5  => 3,
+			> 2.5f and <= 5 => 1,
+			>= 1.5f and < 2.5f => 2,
+			< 1.5f => 0,
+			_ => 0
+		};
+		return currentState;
 	}
-	// int currentState = GetCurrentState(currentSymbolFrequencies);
-	
 
 
-	
 	public void TestWinningLosingStates()
 	{
-		int currentState = 3; // Start with losing state
-		Debug.Log("Testing Q-Learning with Losing and Winning States");
+		int currentState = CurrentStateOnTest();
 
-		for (int step = 0; step < 5; step++) // Test for 10 steps
+		Debug.Log("Testing Q-Learning with Losing and Winning States");
+	
+		for (int step = 0; step < 10; step++) // Test for 10 steps
 		{
 			int bestAction = ChooseAction(currentState,0.05f);
 			Debug.Log($"Step {step + 1}: Current State={currentState}, Best Action={bestAction}");
-
+	
 			// Apply the best action
 			float[] newFrequencies = ApplyAction(states[currentState], bestAction);
-
+	
 			// Determine the next state based on new frequencies
 			currentState = GetCurrentState(newFrequencies);
-
+	
 			// Simulate spins and log RTP
+			SetSymbolFrequencies(newFrequencies);
+			
+			Debug.Log("final symbol frequency: " +symbolProbabilities[0]+"    " +symbolProbabilities[1] +"   "  +symbolProbabilities[2] +"   "  +symbolProbabilities[3] +"   "  +symbolProbabilities[4] +"   "  +symbolProbabilities[5] +"   "  +symbolProbabilities[6] +"   "  +symbolProbabilities[7] +"   "  +symbolProbabilities[8] +"    "  +symbolProbabilities[9] );
+			
+			
+			float totalPayout = 0;
+			for (int i = 0; i < numSimulations; i++)
+			{
+				totalPayout += SimulateSpin();
+			}
+	
+			
+			float rtp = totalPayout / (numSimulations * betAmount);
+			Debug.Log($"New RTP: {rtp}");
+		}
+	}
+
+	
+	
+	
+	
+	public void TestWinningLosingStatesOnStart()
+	{
+		int currentState = CurrentStateOnTest();
+		for (int step = 0; step < 10; step++) // Test for 10 steps
+		{
+			int bestAction = ChooseAction(currentState,0.05f);
+			float[] newFrequencies = ApplyAction(states[currentState], bestAction);
+			currentState = GetCurrentState(newFrequencies);
 			SetSymbolFrequencies(newFrequencies);
 			float totalPayout = 0;
 			for (int i = 0; i < numSimulations; i++)
 			{
 				totalPayout += SimulateSpin();
 			}
-
-			
-			float rtp = totalPayout / (numSimulations * betAmount);
-			Debug.Log($"New RTP: {rtp}");
-			// Print the updated frequencies to the console
-			// for (int i = 0; i < newFrequencies.Length; i++)
-			// {
-			// 	Debug.Log($"Symbol {i + 1} Frequency: {newFrequencies[i]:F2}");
-			// }
-
-			// // Validate state transition based on RTP
-			// if (currentState == 0 && rtp < 1)
-			// {
-			// 	Debug.Log("Still in a Losing State!");
-			// }
-			// else if (currentState != 0  && rtp >= 1)
-			// {
-			// 	Debug.Log("Still in a Winning State!");
-			// }
-			// else
-			// {
-			// 	Debug.Log("State transition might be incorrect based on RTP!");
-			// }
 		}
 	}
 
-	
-	
-	
-	
-
-	#endregion
+	// #endregion
 
 	
 	
